@@ -1,34 +1,40 @@
-#!/usr/bin/python
-from multiprocessing.connection import Listener
-from threading import get_native_id, Thread
-from typing import Dict, List
 import concurrent.futures
 import itertools
+import logging
+from multiprocessing.connection import Listener
+from threading import Thread, get_native_id
+from typing import Dict, List
+
+import click
+import daemon
+import lockfile
+from ratemate import RateLimit
 from syneto_translate.translate import translate_text
 
-import daemon
-import logging
-
-import lockfile
-
-PIDFILE = 'dm.pid'
-LOGFILE = 'dm.log'
+RATE_LIMIT = None
+PIDFILE = "dm.pid"
+LOGFILE = "dm.log"
 
 # Configure logging
-# logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG, filename='dm.log')
 
 
 def translate(text: str, dest_lang: str) -> str:
-    logging.debug(f"Line '{text}' is translated on process {get_native_id()}")
+    waited_time = RATE_LIMIT.wait()
+    logging.debug(
+        f"Line '{text}' is translated on process {get_native_id()} "
+        f"after waited {waited_time}s for limiting rates"
+    )
     return translate_text(text, dest_lang)
 
 
 def process_message(message: Dict) -> List:
     with concurrent.futures.ProcessPoolExecutor() as executor:
-        translated_lines = executor.map(translate,
-                                        message['lines'],
-                                        itertools.repeat(message['dest_lang'], len(message['lines']))
-                                        )
+        translated_lines = executor.map(
+            translate,
+            message["lines"],
+            itertools.repeat(message["dest_lang"], len(message["lines"])),
+        )
         return list(translated_lines)
 
 
@@ -39,7 +45,7 @@ def handle_client(c):
     c.send(translated_msg)
 
 
-def echo_server(address, authkey):
+def start_server(address, authkey):
     server_c = Listener(address, authkey=authkey)
     logging.debug("Listener ready")
     while True:
@@ -50,10 +56,23 @@ def echo_server(address, authkey):
         t.start()
 
 
+@click.command()
+@click.option("--per-sec")
+@click.option("--debug-no-daemon", is_flag=True)
+def init_server(per_sec, debug_no_daemon):
+    click.echo(f"Translation daemon started, throttling at {per_sec} queries/second.")
+    global RATE_LIMIT
+    RATE_LIMIT = RateLimit(max_count=int(per_sec), per=1)
+    if debug_no_daemon:
+        start_server(("", 16000), b"secret-key")
+    else:
+        context = daemon.DaemonContext(pidfile=lockfile.FileLock("dm.pid"), umask=0o002)
+        with context:
+            start_server(("", 16000), b"secret-key")
+
+
 def start_daemon():
-    context = daemon.DaemonContext(pidfile=lockfile.FileLock('dm.pid'), umask=0o002)
-    with context:
-        echo_server(("", 16000), b"secret-key")
+    init_server(auto_envvar_prefix="QUERIES")
 
 
 if __name__ == "__main__":
