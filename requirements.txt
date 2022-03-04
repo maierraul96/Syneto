@@ -1,5 +1,4 @@
 setuptools~=51.0.0
 click~=8.0.4
 lockfile~=0.12.2
-googletrans~=3.1.0a0
 google-cloud-translate~=3.7.1
