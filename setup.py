@@ -11,7 +11,7 @@ setup(
     description='This is the test for Syneto interview',
     entry_points = {
         'console_scripts': [
-            'gtd=syneto_translate.daemon_process:main',
+            'gtd=syneto_translate.daemon_process:start_daemon',
             'gtranslate=syneto_translate.client:main'
         ],
     }
