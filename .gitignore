@@ -3,3 +3,4 @@ venv
 .idea
 build
 account_cred.json
+.env

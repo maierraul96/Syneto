@@ -9,14 +9,15 @@ import click
 import daemon
 import lockfile
 from ratemate import RateLimit
-from syneto_translate.translate import translate_text
+from src import SECRET_KEY
+from src.utils.translate import translate_text
 
 RATE_LIMIT = None
 PIDFILE = "dm.pid"
 LOGFILE = "dm.log"
 
 # Configure logging
-logging.basicConfig(level=logging.DEBUG, filename='dm.log')
+logging.basicConfig(level=logging.DEBUG, filename="dm.log")
 
 
 def translate(text: str, dest_lang: str) -> str:
@@ -57,18 +58,28 @@ def start_server(address, authkey):
 
 
 @click.command()
-@click.option("--per-sec")
-@click.option("--debug-no-daemon", is_flag=True)
+@click.option(
+    "--per-sec",
+    type=int,
+    default=10,
+    show_default=True,
+    help="Limit number of requests per second",
+)
+@click.option(
+    "--debug-no-daemon",
+    is_flag=True,
+    help="Use this flag if you don't want a daemon process",
+)
 def init_server(per_sec, debug_no_daemon):
     click.echo(f"Translation daemon started, throttling at {per_sec} queries/second.")
     global RATE_LIMIT
     RATE_LIMIT = RateLimit(max_count=int(per_sec), per=1)
     if debug_no_daemon:
-        start_server(("", 16000), b"secret-key")
+        start_server(("", 16000), bytes(SECRET_KEY, "utf-8"))
     else:
         context = daemon.DaemonContext(pidfile=lockfile.FileLock("dm.pid"), umask=0o002)
         with context:
-            start_server(("", 16000), b"secret-key")
+            start_server(("", 16000), bytes(SECRET_KEY, "utf-8"))
 
 
 def start_daemon():
