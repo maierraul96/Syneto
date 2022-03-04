@@ -35,3 +35,12 @@ Good day
 Goodbye
 (localhost) $
 ```
+### How to install
+ 1. Download or clone the repo
+ 2. Run `pip install .`
+ 3. Make a `.env` file containing the following:
+```
+GOOGLE_APPLICATION_CREDENTIALS=<path to your google service account credentials>
+GOOGLE_PROJECT_ID=<your google project ID>
+SECRET_KEY=<any utf-8 secret string>
+```
