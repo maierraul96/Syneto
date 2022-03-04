@@ -3,3 +3,4 @@ click~=8.0.4
 lockfile~=0.12.2
 google-cloud-translate~=3.7.1
 python-dotenv~=0.19.2
+ratemate~=0.1.0

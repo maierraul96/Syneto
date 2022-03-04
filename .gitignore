@@ -1,4 +1,5 @@
 Syneto.egg-info
 venv
 .idea
+build
 account_cred.json
