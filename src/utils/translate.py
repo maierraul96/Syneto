@@ -1,9 +1,9 @@
 # Imports the Google Cloud Translation library
-from google.cloud import translate
-from google.oauth2 import service_account
 import json
 
-from syneto_translate import PROJECT_ID, SERVICE_ACCOUNT_FILE
+from google.cloud import translate
+from google.oauth2 import service_account
+from src import PROJECT_ID, SERVICE_ACCOUNT_FILE
 
 
 def load_credentials() -> service_account.Credentials:
@@ -32,4 +32,6 @@ def translate_text(text: str, dest_lang: str) -> str:
     )
 
     # Display the translation for each input text provided
-    return ' '.join([translation.translated_text for translation in response.translations])
+    return " ".join(
+        [translation.translated_text for translation in response.translations]
+    )
